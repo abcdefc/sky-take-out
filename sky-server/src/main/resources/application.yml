@@ -1,5 +1,6 @@
 server:
-  port: 8080
+  port: 8082
+  shutdown: graceful
 
 spring:
   profiles:
@@ -32,7 +33,7 @@ logging:
 sky:
   jwt:
     # 设置jwt签名加密时使用的秘钥
-    admin-secret-key: itcast
+    admin-secret-key: sky_take_out_jwt_secret_key_2026_abcxyz
     # 设置jwt过期时间
     admin-ttl: 7200000
     # 设置前端传递过来的令牌名称
