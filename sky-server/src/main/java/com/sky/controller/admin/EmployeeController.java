@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 
@@ -102,4 +103,13 @@ public class EmployeeController {
         return Result.success(pageResult);
 
     }
+
+    @PostMapping("status/{status}")
+    @Operation (summary = "启用禁用员工账号")
+    public Result startOrstop(@PathVariable Integer status,Long id){
+        log.info("启用禁用员工账号：{},{}",status,id);
+        employeeService.startOrstop(status,id);
+        return  Result.success();
+    }
 }
+

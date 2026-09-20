@@ -99,7 +99,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public PageResult pageQuery(EmployeePageQueryDTO employeePageQueryDTO) {
-        
+
         // 开始分页
         PageHelper.startPage(employeePageQueryDTO.getPage(), employeePageQueryDTO.getPageSize());
         Page<Employee> page = employeeMapper.pageQuery(employeePageQueryDTO);
@@ -108,6 +108,17 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         PageResult pageResult = new PageResult(total, records);
         return pageResult;
+    }
+
+    @Override
+    public void startOrstop(Integer status, Long id) {
+
+        /* // Employee employee = new Employee();
+        // employee.setStatus(status);
+        // employee.setId(id); */
+
+        Employee employee = Employee.builder().status(status).id(id).build();
+        employeeMapper.update(employee);
     }
 
 }

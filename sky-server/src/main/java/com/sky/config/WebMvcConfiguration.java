@@ -5,21 +5,24 @@ import com.sky.json.JacksonObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.cbor.MappingJackson2CborHttpMessageConverter;
+import org.springframework.http.converter.ResourceHttpMessageConverter;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.web.servlet.HandlerExceptionResolver;
+import org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
-
 
 /**
  * 配置类，注册web层相关组件
@@ -45,6 +48,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
 
     /**
      * 通过knife4j生成接口文档
+     * 
      * @return
      */
     @Bean
@@ -58,6 +62,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
 
     /**
      * 设置静态资源映射
+     * 
      * @param registry
      */
     protected void addResourceHandlers(ResourceHandlerRegistry registry) {
@@ -68,14 +73,45 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
 
     // 扩展spring mvc框架消息转化器
 
+    /**
+     * 扩展消息转换器，补齐完整 converter 链
+     * 注意：本类 extends WebMvcConfigurationSupport，会绕过 Boot 默认 WebMvc 自动装配，
+     * 所以默认的 HttpMessageConverter 全部丢失，需要在这里手动补齐。
+     * 关键点：必须包含 ByteArrayHttpMessageConverter，否则 /v3/api-docs 会以 Base64 编码响应
+     * 参考：https://doc.xiaominfo.com/docs/faq/v4/knife4j-base64-response
+     * 参考：https://github.com/springdoc/springdoc-openapi/issues/2143
+     */
     @Override
+    @SuppressWarnings("removal")
     protected void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
         log.info("扩展消息转换器……");
-        // 创建一个消息转化器对象
-        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-        // 设置一个对象转换器，对象转换器可以将java对象序列化为json数据
-        converter.setObjectMapper(new JacksonObjectMapper());
-        // 将自己的消息转化器加入容器中
-        converters.add(0,converter);
+
+        // 1) byte[] —— 解决 knife4j + springdoc OpenAPI 接口 Base64 响应问题
+        converters.add(new ByteArrayHttpMessageConverter());
+
+        // 2) 静态资源（Resource、InputStream）
+        converters.add(new ResourceHttpMessageConverter());
+
+        // 3) String / text/html / JSON 字符串
+        StringHttpMessageConverter stringConverter = new StringHttpMessageConverter(StandardCharsets.UTF_8);
+        stringConverter.setSupportedMediaTypes(List.of(
+                MediaType.TEXT_PLAIN,
+                MediaType.TEXT_HTML,
+                MediaType.APPLICATION_JSON,
+                MediaType.ALL
+        ));
+        converters.add(stringConverter);
+
+        // 4) application/x-www-form-urlencoded 与 multipart/form-data
+        converters.add(new AllEncompassingFormHttpMessageConverter());
+
+        // 5) 自定义 Jackson2 converter（仅承接 application/json 与 application/*+json）
+        MappingJackson2HttpMessageConverter jacksonConverter = new MappingJackson2HttpMessageConverter();
+        jacksonConverter.setObjectMapper(new JacksonObjectMapper());
+        jacksonConverter.setSupportedMediaTypes(List.of(
+                MediaType.APPLICATION_JSON,
+                new MediaType("application", "*+json")
+        ));
+        converters.add(jacksonConverter);
     }
 }
