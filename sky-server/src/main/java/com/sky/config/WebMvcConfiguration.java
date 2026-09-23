@@ -112,6 +112,6 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
                 MediaType.APPLICATION_JSON,
                 new MediaType("application", "*+json")
         ));
-        converters.add(jacksonConverter);
+        converters.add(0,jacksonConverter);
     }
 }
