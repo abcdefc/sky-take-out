@@ -16,6 +16,7 @@ import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -81,37 +82,60 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
      * 参考：https://doc.xiaominfo.com/docs/faq/v4/knife4j-base64-response
      * 参考：https://github.com/springdoc/springdoc-openapi/issues/2143
      */
+
     @Override
     @SuppressWarnings("removal")
     protected void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
-        log.info("扩展消息转换器……");
+        // 1) 移除列表中所有默认的 Jackson 系 converter
+        // Boot 4 默认注册 Jackson 3 的 JacksonJsonHttpMessageConverter；
+        // 若 classpath 上同时有 Jackson 2，还可能有 MappingJackson2HttpMessageConverter
+        converters.removeIf(c -> c instanceof MappingJackson2HttpMessageConverter
+                || c instanceof JacksonJsonHttpMessageConverter);
 
-        // 1) byte[] —— 解决 knife4j + springdoc OpenAPI 接口 Base64 响应问题
-        converters.add(new ByteArrayHttpMessageConverter());
-
-        // 2) 静态资源（Resource、InputStream）
-        converters.add(new ResourceHttpMessageConverter());
-
-        // 3) String / text/html / JSON 字符串
-        StringHttpMessageConverter stringConverter = new StringHttpMessageConverter(StandardCharsets.UTF_8);
-        stringConverter.setSupportedMediaTypes(List.of(
-                MediaType.TEXT_PLAIN,
-                MediaType.TEXT_HTML,
-                MediaType.APPLICATION_JSON,
-                MediaType.ALL
-        ));
-        converters.add(stringConverter);
-
-        // 4) application/x-www-form-urlencoded 与 multipart/form-data
-        converters.add(new AllEncompassingFormHttpMessageConverter());
-
-        // 5) 自定义 Jackson2 converter（仅承接 application/json 与 application/*+json）
+        // 2) 自定义 Jackson2 converter 追加到列表末尾
+        // 顺序保持：ByteArray/String/Resource/Form 在前，Jackson 在后
+        // → api-docs 的 byte[] 响应不会被 Jackson 抢走变成 Base64
+        // → 普通 JSON 响应仍走自定义 ObjectMapper，时间格式生效
         MappingJackson2HttpMessageConverter jacksonConverter = new MappingJackson2HttpMessageConverter();
         jacksonConverter.setObjectMapper(new JacksonObjectMapper());
         jacksonConverter.setSupportedMediaTypes(List.of(
                 MediaType.APPLICATION_JSON,
-                new MediaType("application", "*+json")
-        ));
-        converters.add(0,jacksonConverter);
+                new MediaType("application", "*+json")));
+        converters.add(jacksonConverter);
     }
+
+    // protected void extendMessageConverters(List<HttpMessageConverter<?>>
+    // converters) {
+    // log.info("扩展消息转换器……");
+
+    // // 1) byte[] —— 解决 knife4j + springdoc OpenAPI 接口 Base64 响应问题
+    // converters.add(new ByteArrayHttpMessageConverter());
+
+    // // 2) 静态资源（Resource、InputStream）
+    // converters.add(new ResourceHttpMessageConverter());
+
+    // // 3) String / text/html / JSON 字符串
+    // StringHttpMessageConverter stringConverter = new
+    // StringHttpMessageConverter(StandardCharsets.UTF_8);
+    // stringConverter.setSupportedMediaTypes(List.of(
+    // MediaType.TEXT_PLAIN,
+    // MediaType.TEXT_HTML,
+    // MediaType.APPLICATION_JSON,
+    // MediaType.ALL
+    // ));
+    // converters.add(stringConverter);
+
+    // // 4) application/x-www-form-urlencoded 与 multipart/form-data
+    // converters.add(new AllEncompassingFormHttpMessageConverter());
+
+    // // 5) 自定义 Jackson2 converter（仅承接 application/json 与 application/*+json）
+    // MappingJackson2HttpMessageConverter jacksonConverter = new
+    // MappingJackson2HttpMessageConverter();
+    // jacksonConverter.setObjectMapper(new JacksonObjectMapper());
+    // jacksonConverter.setSupportedMediaTypes(List.of(
+    // MediaType.APPLICATION_JSON,
+    // new MediaType("application", "*+json")
+    // ));
+    // converters.add(0,jacksonConverter);
+    // }
 }
