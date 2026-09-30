@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -59,6 +60,30 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
                 .title("苍穹外卖项目接口文档")
                 .version("2.0")
                 .description("苍穹外卖项目接口文档"));
+    }
+
+    /**
+     * 管理端接口分组：只扫描 /admin/** 下的接口
+     */
+    @Bean
+    public GroupedOpenApi adminDocket() {
+        log.info("准备生成管理端接口文档……");
+        return GroupedOpenApi.builder()
+                .group("管理端")
+                .pathsToMatch("/admin/**")
+                .build();
+    }
+
+    /**
+     * 用户端接口分组：只扫描 /user/** 下的接口
+     */
+    @Bean
+    public GroupedOpenApi userDocket() {
+        log.info("准备生成用户端接口文档……");
+        return GroupedOpenApi.builder()
+                .group("用户端")
+                .pathsToMatch("/user/**")
+                .build();
     }
 
     /**
