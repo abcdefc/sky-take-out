@@ -1,8 +1,10 @@
 package com.sky.controller.admin;
 
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,11 +38,19 @@ public class DishController {
     @Autowired
     private DishService dishService;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+
     @PostMapping
     @Operation(summary = "新增菜品")
     public Result save(@RequestBody DishDTO dishDTO) {
         log.info("新增菜品：{}", dishDTO);
         dishService.saveWithFlavor(dishDTO);
+
+        // 清理缓存数据
+        String key = "dish_" + dishDTO.getCategoryId();
+        cleanCache(key);
+        
         return Result.success();
     }
 
@@ -65,6 +75,8 @@ public class DishController {
     public Result<DishVO> getById(@PathVariable Long id) {
         log.info("根据id查询菜品：{}", id);
         DishVO dishVO = dishService.getByIdWithFlavor(id);
+
+        cleanCache("dish_*");
         return Result.success(dishVO);
 
     }
@@ -74,6 +86,20 @@ public class DishController {
     public Result update(@RequestBody DishDTO dishDTO) {
         log.info("修改菜品：{}", dishDTO);
         dishService.updateWithFlavor(dishDTO);
+        cleanCache("dish_*");
+
+        return Result.success();
+    }
+
+    @PostMapping("/status/{status}")
+    @Operation(summary = "菜品起售停售")
+    public Result<String> startOrStop(@PathVariable Integer status, Long id) {
+        dishService.startOrStop(status, id);
+
+        // 将所有的菜品缓存数据清理掉，所有以dish_开头的key 
+        cleanCache("dish_*");
+        
+
         return Result.success();
     }
 
@@ -90,4 +116,10 @@ public class DishController {
         return Result.success(list);
     }
 
+
+    // 清理缓存数据
+    private void cleanCache(String pattern){
+        Set keys = redisTemplate.keys("dish_*");
+        redisTemplate.delete(keys);
+    }
 }
