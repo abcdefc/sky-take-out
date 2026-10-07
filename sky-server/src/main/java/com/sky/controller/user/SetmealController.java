@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,6 +41,7 @@ public class SetmealController {
      */
     @GetMapping("/list")
     @Operation(summary = "根据分类id查询套餐")
+    @Cacheable(cacheNames = "setmealCache", key = "#categoryId")
     public Result<List<Setmeal>> list(Long categoryId) {
         Setmeal setmeal = new Setmeal();
         setmeal.setCategoryId(categoryId);
@@ -47,54 +49,6 @@ public class SetmealController {
 
         List<Setmeal> list = setmealService.list(setmeal);
         return Result.success(list);
-    }
-
-    @PostMapping
-    @Operation(summary = "新增套餐")
-    public Result save(@RequestBody SetmealDTO setmealDTO) {
-        setmealService.saveWithDish(setmealDTO);
-        return Result.success();
-    }
-
-    @GetMapping("/page")
-    @Operation(summary = "分页查询")
-    public Result<PageResult> page(SetmealPageQueryDTO setmealPageQueryDTO) {
-        PageResult pageResult = setmealService.pageQuery(setmealPageQueryDTO);
-        return Result.success(pageResult);
-    }
-
-    @DeleteMapping
-    @Operation(summary = "批量删除套餐")
-    public Result delete(@RequestParam List<Long> ids) {
-        setmealService.deleteBatch(ids);
-        return Result.success();
-    }
-
-    @GetMapping("/{id}")
-    @Operation(summary = "根据id查询套餐")
-    public Result<SetmealVO> getById(@PathVariable Long id) {
-        SetmealVO setmealVO = setmealService.getByIdWithDish(id);
-        return Result.success(setmealVO);
-    }
-
-    @PostMapping("/status/{status}")
-    @Operation(summary = "套餐起售停售")
-    public Result startOrStop(@PathVariable Integer status, Long id) {
-        setmealService.startOrStop(status, id);
-        return Result.success();
-    }
-
-    /**
-     * 修改套餐
-     *
-     * @param setmealDTO
-     * @return
-     */
-    @PutMapping
-    @Operation(summary = "修改套餐")
-    public Result update(@RequestBody SetmealDTO setmealDTO) {
-        setmealService.update(setmealDTO);
-        return Result.success();
     }
 
     /**
