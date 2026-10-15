@@ -49,6 +49,7 @@ import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
+import com.sky.websocket.WebSocketServer;
 
 import ch.qos.logback.core.joran.util.beans.BeanUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -80,6 +81,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private WeChatPayUtil weChatPayUtil;
+
+    @Autowired 
+    private WebSocketServer webSocketServer;
 
     @Override
     @Transactional
@@ -191,6 +195,9 @@ public class OrderServiceImpl implements OrderService {
      */
     public void paySuccess(String outTradeNo) {
 
+        // 当前登录用户id
+        Long userId = BaseContext.getCurrentId();
+
         // 根据订单号查询订单
         Orders ordersDB = orderMapper.getByNumber(outTradeNo);
 
@@ -203,6 +210,17 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderMapper.update(orders);
+
+        // 通过websocket向客户端浏览器推送信息 type orderid content
+        Map map = new HashMap();
+        map.put("type",1);//1表示来电提醒，2表示客户催单
+        map.put("orderId",ordersDB.getId());// 订单ID
+        map.put("content","订单号："+outTradeNo);
+
+        String json = JSON.toJSONString(map);
+
+        webSocketServer.sendToAllClient(json);
+
     }
 
     @Override
@@ -458,7 +476,13 @@ public class OrderServiceImpl implements OrderService {
     }
 
      private void checkOutOfRange(String address) {
+         // ak 未配置时跳过配送范围校验（模拟环境）
+        if (ak == null || ak.isBlank()) {
+            log.warn("百度地图 AK 未配置，跳过配送范围校验");
+            return;
+        }
         Map map = new HashMap();
+
         map.put("address",shopAddress);
         map.put("output","json");
         map.put("ak",ak);
@@ -538,6 +562,24 @@ public class OrderServiceImpl implements OrderService {
 
         // 将购物车对象批量添加到数据库
         shoppingCartMapper.insertBatch(shoppingCartList);
+    }
+
+    public void reminder(Long id) {
+        // 根据id查询订单
+        Orders ordersDB = orderMapper.getById(id);
+
+        // 校验订单是否存在
+        if (ordersDB == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+
+        Map map = new HashMap();
+        map.put("type",2); //1表示来单提醒 2表示客户催单
+        map.put("orderId",id);
+        map.put("content","订单号：" + ordersDB.getNumber());
+
+        //通过websocket向客户端浏览器推送消息
+        webSocketServer.sendToAllClient(JSON.toJSONString(map));
     }
     
 }
