@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sky.result.Result;
 import com.sky.service.ReportService;
 import com.sky.vo.TurnoverReportVO;
+import com.sky.vo.UserReportVO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,11 +29,22 @@ public class ReportController {
 
     @GetMapping("/turnoverStatistics")
     @Operation(summary = "营业额统计")
-    public Result<TurnoverReportVO> TurnoverReportVO(
+    public Result<TurnoverReportVO> turnoverStatistics(
             @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate begin,
             @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end) {
 
-        log.info("营业额统计：{},{}",begin,end);
+        log.info("营业额数据统计：{},{}",begin,end);
         return Result.success(reportService.getTurnoverStatistics(begin, end));
     }
+    
+    @GetMapping ("/userStatistics")
+    @Operation (summary = "用户统计")
+    public Result<UserReportVO> userStatistics(
+            @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate begin,
+            @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end) {
+
+        log.info("用户数据统计：{},{}",begin,end);
+        return Result.success(reportService.getUserStatistics(begin, end));
+    }
+    
 }
