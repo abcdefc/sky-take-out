@@ -2,6 +2,7 @@ package com.sky.service;
 
 import java.time.LocalDate;
 
+import com.sky.vo.OrderReportVO;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
 // 指定区间内的营业额
@@ -10,4 +11,7 @@ public interface ReportService {
 
 
     UserReportVO getUserStatistics(LocalDate begin, LocalDate end);
+
+
+    OrderReportVO getOrdersStatistics(LocalDate begin, LocalDate end);
 }

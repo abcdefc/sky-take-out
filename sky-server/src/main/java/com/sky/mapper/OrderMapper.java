@@ -2,6 +2,7 @@ package com.sky.mapper;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
@@ -52,5 +53,6 @@ public interface OrderMapper {
 
     Double sumByMap();
 
+    Integer countByMap(Map map);
 
 }
