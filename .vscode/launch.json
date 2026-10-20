@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "POITest",
+            "request": "launch",
+            "mainClass": "com.sky.test.POITest",
+            "projectName": "sky-server"
+        },
+        {
+            "type": "java",
             "name": "Current File",
             "request": "launch",
             "mainClass": "${file}"

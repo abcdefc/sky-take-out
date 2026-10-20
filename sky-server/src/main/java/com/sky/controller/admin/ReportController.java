@@ -16,6 +16,7 @@ import com.sky.vo.UserReportVO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -65,6 +66,12 @@ public class ReportController {
             @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end) {
         log.info("销量排名top10：{},{}", begin,end);
         return Result.success(reportService.getSalesTop10(begin,end));
+    }
+
+    @GetMapping ("/export")
+    @Operation (summary = "导出运营数据报表")
+    public void export(HttpServletResponse res){
+        reportService.exportBusinessDate(res);
     }
 
 }
