@@ -61,7 +61,7 @@ public class ReportServiceImpl implements ReportService {
             map.put("begin", beginTime);
             map.put("end", endTime);
             map.put("status", Orders.COMPLETED);
-            Double turnover = orderMapper.sumByMap();
+            Double turnover = orderMapper.sumByMap(map);
             turnover = turnover == null ? 0.0 : turnover;
             turnoverList.add(turnover);
 
